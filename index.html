@@ -121,61 +121,71 @@
         }
 
         async function handleLogin(event) {
-            event.preventDefault();
-            
-            if (!validarEmailInput()) {
-                document.getElementById('username').focus();
-                return;
-            }
+    event.preventDefault();
+    
+    if (!validarEmailInput()) {
+        document.getElementById('username').focus();
+        return;
+    }
 
-            const user = document.getElementById('username').value;
-            const pass = document.getElementById('password').value;
-            const errorDiv = document.getElementById('errorMsg');
-            const btn = document.getElementById('submitBtn');
+    const user = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+    const errorDiv = document.getElementById('errorMsg');
+    const btn = document.getElementById('submitBtn');
 
-            errorDiv.classList.add('hidden');
-            btn.disabled = true;
-            btn.textContent = "Verificant...";
+    errorDiv.classList.add('hidden');
+    btn.disabled = true;
+    btn.textContent = "Verificant...";
 
-            try {
-                // Enviem la petició POST al backend de Google Apps Script
-                const response = await fetch(BACKEND_URL, {
-                    method: "POST",
-                    // Utilitzem text/plain per evitar bloquejos pre-flight de CORS per part de Google Apps Script
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({ usuari: user, password: pass })
-                });
+    try {
+        // Preparem les dades com a text pla per evitar peticions pre-flight CORS
+        const payload = JSON.stringify({ usuari: user, password: pass });
 
-                const data = await response.json();
+        // Petició fetch configurada explicitament per seguir la redirecció HTTP 302 de Google
+        const response = await fetch(BACKEND_URL, {
+            method: "POST",
+            mode: "cors",
+            redirect: "follow",
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8"
+            },
+            body: payload
+        });
 
-                btn.disabled = false;
-                btn.textContent = "Iniciar Sessió";
-
-                if (data.success) {
-                    sessionStorage.setItem('tirador_session_token', data.token);
-                    sessionStorage.setItem('tirador_user_email', data.soci.email);
-
-                    document.getElementById('loginSection').classList.add('hidden');
-                    document.getElementById('dashboardSection').classList.remove('hidden');
-                    document.getElementById('subtittle').textContent = "Panell de Control del Soci";
-
-                    document.getElementById('valNom').textContent = data.soci.nom;
-                    document.getElementById('valEmail').textContent = data.soci.email;
-                    document.getElementById('valTelefon').textContent = data.soci.telefon;
-                    document.getElementById('valEstat').textContent = data.soci.estat;
-                } else {
-                    errorDiv.textContent = data.message;
-                    errorDiv.classList.remove('hidden');
-                }
-
-            } catch (error) {
-                console.error("Error de connexió:", error);
-                btn.disabled = false;
-                btn.textContent = "Iniciar Sessió";
-                errorDiv.textContent = "Error de connexió amb el servidor.";
-                errorDiv.classList.remove('hidden');
-            }
+        if (!response.ok) {
+            throw new Error("HTTP error! Status: " + response.status);
         }
+
+        const data = await response.json();
+
+        btn.disabled = false;
+        btn.textContent = "Iniciar Sessió";
+
+        if (data.success) {
+            sessionStorage.setItem('tirador_session_token', data.token);
+            sessionStorage.setItem('tirador_user_email', data.soci.email);
+
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            document.getElementById('subtittle').textContent = "Panell de Control del Soci";
+
+            document.getElementById('valNom').textContent = data.soci.nom;
+            document.getElementById('valEmail').textContent = data.soci.email;
+            document.getElementById('valTelefon').textContent = data.soci.telefon;
+            document.getElementById('valEstat').textContent = data.soci.estat;
+        } else {
+            errorDiv.textContent = data.message;
+            errorDiv.classList.remove('hidden');
+        }
+
+    } catch (error) {
+        console.error("Error detallat de connexió:", error);
+        btn.disabled = false;
+        btn.textContent = "Iniciar Sessió";
+        errorDiv.textContent = "Error de connexió amb el servidor.";
+        errorDiv.classList.remove('hidden');
+    }
+}
 
         function logout() {
             sessionStorage.removeItem('tirador_session_token');
