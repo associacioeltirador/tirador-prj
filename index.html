@@ -41,7 +41,7 @@
                     <input type="email" id="username" required 
                         oninput="validarEmailInput()"
                         class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 focus:outline-none text-slate-900 placeholder-slate-400 transition duration-150"
-                        placeholder="soci1@eltirador.com">
+                        placeholder="Email">
                     
                     <p id="emailError" class="text-rose-600 text-xs mt-1.5 hidden font-medium flex items-center gap-1">
                         <span>⚠️</span> El format del correu electrònic no és vàlid (ex: nom@domini.com).
@@ -91,7 +91,6 @@
     <!-- Script de Comunicació via API REST -->
     <script>
         // URL DEL BACKEND DE GOOGLE APPS SCRIPT
-        // Canvia aquesta línia per la teva URL acabada en /exec
         const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzwQKkdc9IxveNSbDg1HEe4D2no-t78kJFQwf-VX_OvMhgpKaYzQL2A4yj2tjENgHJ6VA/exec";
 
         function validarEmailInput() {
@@ -121,71 +120,74 @@
         }
 
         async function handleLogin(event) {
-    event.preventDefault();
-    
-    if (!validarEmailInput()) {
-        document.getElementById('username').focus();
-        return;
-    }
+            event.preventDefault();
+            
+            if (!validarEmailInput()) {
+                document.getElementById('username').focus();
+                return;
+            }
 
-    const user = document.getElementById('username').value;
-    const pass = document.getElementById('password').value;
-    const errorDiv = document.getElementById('errorMsg');
-    const btn = document.getElementById('submitBtn');
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const errorDiv = document.getElementById('errorMsg');
+            const btn = document.getElementById('submitBtn');
 
-    errorDiv.classList.add('hidden');
-    btn.disabled = true;
-    btn.textContent = "Verificant...";
+            errorDiv.classList.add('hidden');
+            btn.disabled = true;
+            btn.textContent = "Verificant...";
 
-    try {
-        // Preparem les dades com a text pla per evitar peticions pre-flight CORS
-        const payload = JSON.stringify({ usuari: user, password: pass });
+            try {
+                // Enviem les dades amb el token secret inclòs
+                const payload = JSON.stringify({ 
+                    usuari: user, 
+                    password: pass,
+                    app_secret: "ElTirador_Secret_2026_SecureKey!" 
+                });
 
-        // Petició fetch configurada explicitament per seguir la redirecció HTTP 302 de Google
-        const response = await fetch(BACKEND_URL, {
-            method: "POST",
-            mode: "cors",
-            redirect: "follow",
-            headers: {
-                "Content-Type": "text/plain;charset=utf-8"
-            },
-            body: payload
-        });
+                const response = await fetch(BACKEND_URL, {
+                    method: "POST",
+                    mode: "cors",
+                    redirect: "follow",
+                    headers: {
+                        "Content-Type": "text/plain;charset=utf-8"
+                    },
+                    body: payload
+                });
 
-        if (!response.ok) {
-            throw new Error("HTTP error! Status: " + response.status);
+                if (!response.ok) {
+                    throw new Error("HTTP error! Status: " + response.status);
+                }
+
+                const data = await response.json();
+
+                btn.disabled = false;
+                btn.textContent = "Iniciar Sessió";
+
+                if (data.success) {
+                    sessionStorage.setItem('tirador_session_token', data.token);
+                    sessionStorage.setItem('tirador_user_email', data.soci.email);
+
+                    document.getElementById('loginSection').classList.add('hidden');
+                    document.getElementById('dashboardSection').classList.remove('hidden');
+                    document.getElementById('subtittle').textContent = "Panell de Control del Soci";
+
+                    document.getElementById('valNom').textContent = data.soci.nom;
+                    document.getElementById('valEmail').textContent = data.soci.email;
+                    document.getElementById('valTelefon').textContent = data.soci.telefon;
+                    document.getElementById('valEstat').textContent = data.soci.estat;
+                } else {
+                    errorDiv.textContent = data.message;
+                    errorDiv.classList.remove('hidden');
+                }
+
+            } catch (error) {
+                console.error("Error detallat de connexió:", error);
+                btn.disabled = false;
+                btn.textContent = "Iniciar Sessió";
+                errorDiv.textContent = "Error de connexió amb el servidor.";
+                errorDiv.classList.remove('hidden');
+            }
         }
-
-        const data = await response.json();
-
-        btn.disabled = false;
-        btn.textContent = "Iniciar Sessió";
-
-        if (data.success) {
-            sessionStorage.setItem('tirador_session_token', data.token);
-            sessionStorage.setItem('tirador_user_email', data.soci.email);
-
-            document.getElementById('loginSection').classList.add('hidden');
-            document.getElementById('dashboardSection').classList.remove('hidden');
-            document.getElementById('subtittle').textContent = "Panell de Control del Soci";
-
-            document.getElementById('valNom').textContent = data.soci.nom;
-            document.getElementById('valEmail').textContent = data.soci.email;
-            document.getElementById('valTelefon').textContent = data.soci.telefon;
-            document.getElementById('valEstat').textContent = data.soci.estat;
-        } else {
-            errorDiv.textContent = data.message;
-            errorDiv.classList.remove('hidden');
-        }
-
-    } catch (error) {
-        console.error("Error detallat de connexió:", error);
-        btn.disabled = false;
-        btn.textContent = "Iniciar Sessió";
-        errorDiv.textContent = "Error de connexió amb el servidor.";
-        errorDiv.classList.remove('hidden');
-    }
-}
 
         function logout() {
             sessionStorage.removeItem('tirador_session_token');
