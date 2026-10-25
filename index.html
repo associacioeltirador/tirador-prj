@@ -41,7 +41,7 @@
                     <input type="email" id="username" required 
                         oninput="validarEmailInput()"
                         class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 focus:outline-none text-slate-900 placeholder-slate-400 transition duration-150"
-                        placeholder="Email">
+                        placeholder="soci1@eltirador.com">
                     
                     <p id="emailError" class="text-rose-600 text-xs mt-1.5 hidden font-medium flex items-center gap-1">
                         <span>⚠️</span> El format del correu electrònic no és vàlid (ex: nom@domini.com).
@@ -137,12 +137,7 @@
             btn.textContent = "Verificant...";
 
             try {
-                // Enviem les dades amb el token secret inclòs
-                const payload = JSON.stringify({ 
-                    usuari: user, 
-                    password: pass,
-                    app_secret: "ElTirador_Secret_2026_SecureKey!" 
-                });
+                const payload = JSON.stringify({ usuari: user, password: pass });
 
                 const response = await fetch(BACKEND_URL, {
                     method: "POST",
