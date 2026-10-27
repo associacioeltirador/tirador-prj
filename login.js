@@ -46,7 +46,7 @@ async function handleLogin(event) {
 
     try {
         
-        const payload = JSON.stringify({action: "login",usuari: "user",password: "pass"});
+        const payload = JSON.stringify({action: "login",usuari: user,password: pass});
 
         const response = await fetch(BACKEND_URL, {
             method: "POST",
